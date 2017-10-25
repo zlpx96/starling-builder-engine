@@ -16,6 +16,7 @@ package starlingbuilder.engine
     import starlingbuilder.engine.tween.ITweenBuilder;
     import starlingbuilder.engine.util.ObjectLocaterUtil;
     import starlingbuilder.engine.util.ParamUtil;
+    import starlingbuilder.engine.util.ParamUtil;
     import starlingbuilder.engine.util.SaveUtil;
 
     import flash.geom.Rectangle;
@@ -69,8 +70,8 @@ package starlingbuilder.engine
      *     }</listing>
      *
      * @see http://wiki.starling-framework.org/builder/start Starling Builder wiki page
-     * @see "Starling Builder demo project"
-     * @see "Starling Builder scaffold project"
+     * @see http://github.com/mindjolt/starling-builder-engine/tree/master/demo Starling Builder demo project
+     * @see http://github.com/mindjolt/starling-builder-engine/tree/master/scaffold Starling Builder scaffold project
      *
      */
     public class UIBuilder implements IUIBuilder
@@ -88,6 +89,8 @@ package starlingbuilder.engine
         private var _localization:ILocalization;
 
         private var _localizationHandler:ILocalizationHandler;
+
+        private var _displayObjectHandler:IDisplayObjectHandler;
 
         private var _tweenBuilder:ITweenBuilder;
 
@@ -158,11 +161,13 @@ package starlingbuilder.engine
                 if (isExternalSource(data))
                 {
                     var externalData:Object = _dataFormatter.read(_assetMediator.getExternalData(data.customParams.source));
-                    var params:Dictionary = new Dictionary();
-                    container.addChild(loadTree(externalData.layout, factory, params));
+                    container.addChild(create(externalData) as DisplayObject);
                     paramsDict[obj] = data;
                 }
             }
+
+            if (_displayObjectHandler)
+                _displayObjectHandler.onCreate(obj, paramsDict);
 
             return obj;
         }
@@ -208,14 +213,31 @@ package starlingbuilder.engine
         /**
          * @private
          */
-        public function copy(obj:DisplayObject, paramsDict:Object):String
+        public function copy(obj:Object, paramsDict:Object):String
         {
             if (!_template)
             {
                 throw new Error("template not found!");
             }
 
-            return StableJSONEncoder.stringify(saveTree(obj, paramsDict));
+            var data:Object;
+
+            if (obj is DisplayObject)
+            {
+                data = saveTree(obj as DisplayObject, paramsDict);
+            }
+            else if (obj is Array)
+            {
+                data = [];
+                for each (var subObj:DisplayObject in obj)
+                    data.push(saveTree(subObj, paramsDict));
+            }
+            else
+            {
+                throw new Error("unrecognized format!");
+            }
+
+            return StableJSONEncoder.stringify(data);
         }
 
         /**
@@ -223,7 +245,7 @@ package starlingbuilder.engine
          */
         public function paste(string:String):Object
         {
-            return {layout:JSON.parse(string)};
+            return JSON.parse(string);
         }
 
         /**
@@ -268,6 +290,8 @@ package starlingbuilder.engine
             return item;
         }
 
+        private static const RESOURCE_CLASSES:Array = ["XML", "Object", "feathers.data.ListCollection", "feathers.data.HierarchicalCollection"];
+
         private function saveElement(obj:Object, params:Array, paramsData:Object):Object
         {
             var item:Object = {params:{}, constructorParams:[], customParams:{}};
@@ -288,7 +312,7 @@ package starlingbuilder.engine
                 {
                     if (param.hasOwnProperty("cls"))
                     {
-                        if (obj[param.name] is Texture)   //special case for saving texture
+                        if (obj[param.name] is Texture || RESOURCE_CLASSES.indexOf(ParamUtil.getClassName(obj[param.name])) != -1)   //special case for saving texture
                         {
                             item.params[param.name] = cloneObject(paramsData.params[param.name]);
                         }
@@ -349,6 +373,12 @@ package starlingbuilder.engine
             }
 
             if (param.read_only)
+            {
+                return false;
+            }
+
+            if (param.default_value && "cls" in param.default_value &&
+                    ParamUtil.getClassName(obj[param.name]) == param.default_value.cls)
             {
                 return false;
             }
@@ -526,6 +556,22 @@ package starlingbuilder.engine
         }
 
         /**
+         * @inheritDoc
+         */
+        public function get displayObjectHandler():IDisplayObjectHandler
+        {
+            return _displayObjectHandler
+        }
+
+        /**
+         * @private
+         */
+        public function set displayObjectHandler(value:IDisplayObjectHandler):void
+        {
+            _displayObjectHandler = value;
+        }
+
+        /**
          * @private
          */
         public function get prettyData():Boolean
@@ -595,6 +641,28 @@ package starlingbuilder.engine
                         throw new Error("Property name not defined: ", name);
                 }
             }
+        }
+
+        /***
+         * Helper function to find elements by tag
+         * @param tag name of the tag
+         * @param paramsDict params dictionary of meta data
+         * @return array of objects with the tag, if not found then return empty array
+         */
+        public static function findByTag(tag:String, paramsDict:Dictionary):Array
+        {
+            var result:Array = [];
+
+            for (var obj:Object in paramsDict)
+            {
+                var param:Object = paramsDict[obj];
+                if (param && param.customParams && param.customParams.tag == tag)
+                {
+                    result.push(obj);
+                }
+            }
+
+            return result;
         }
     }
 }

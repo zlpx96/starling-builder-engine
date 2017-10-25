@@ -37,5 +37,14 @@ package starlingbuilder.demo {
 
         [Embed(source="layouts/anchorlayout_test.json", mimeType="application/octet-stream")]
         public static const anchorlayout_test:Class;
+
+        [Embed(source="layouts/containerbutton_test.json", mimeType="application/octet-stream")]
+        public static const containerbutton_test:Class;
+
+        [Embed(source="layouts/particle_test.json", mimeType="application/octet-stream")]
+        public static const particle_test:Class;
+
+        [Embed(source="layouts/pixelmask_test.json", mimeType="application/octet-stream")]
+        public static const pixelmask_test:Class;
     }
 }

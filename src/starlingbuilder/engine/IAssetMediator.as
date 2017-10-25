@@ -74,5 +74,29 @@ package starlingbuilder.engine
          * @return external data with matched name
          */
         function getExternalData(name:String):Object;
+
+        /**
+         *  This method is used to get XML data.
+         *  You can make it simply return null if you don't use the feature.
+         * @param name
+         * @return
+         */
+        function getXml(name:String):XML;
+
+        /**
+         *  This method is used to get other data (JSON data, etc)
+         *  You can make it simply return null if you don't use the feature.
+         * @param name
+         * @return
+         */
+        function getObject(name:String):Object;
+
+        /**
+         * This method is used to get custom data, it opens up possibility to support 3rd party libraries that require other dependencies
+         * @param type
+         * @param name
+         * @return
+         */
+        function getCustomData(type:String, name:String):Object;
     }
 }

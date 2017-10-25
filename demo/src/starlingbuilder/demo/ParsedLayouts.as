@@ -27,5 +27,11 @@ package starlingbuilder.demo {
         public static var layout_test:Object;
 
         public static var anchorlayout_test:Object;
+
+        public static var containerbutton_test:Object;
+
+        public static var particle_test:Object;
+
+        public static var pixelmask_test:Object;
     }
 }
